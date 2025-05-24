@@ -13,3 +13,9 @@ dependencies = [
     "Flask==3.1.1",
     "pydantic==2.11.4"
 ]
+
+[tool.ruff]
+exclude = [
+  "sawmill_api/lib/smsh/SMSHLexer.py",
+  "sawmill_api/lib/smsh/SMSHParser.py",
+]
