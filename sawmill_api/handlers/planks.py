@@ -36,7 +36,6 @@ def get_planks():
     commands, error = parse(command, current_working_directory, LOG_ROOT)
     if error:
         return error, 400
-    log.info(f"FINDME: {commands}")
 
     headers = {
         "Transfer-Encoding": "chunked",
