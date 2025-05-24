@@ -10,6 +10,11 @@ bootstrap:
 	pip install -U -r requirements-dev.txt
 	pre-commit install
 
+smsh: clean
+	mkdir -p build
+	antlr4 -o ./build -no-listener -Dlanguage=Python3 SMSH.g4
+	mv ./build/*.py ./sawmill_api/lib/smsh/
+
 build: clean
 	python -m build --wheel
 
