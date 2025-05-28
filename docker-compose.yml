@@ -1,0 +1,8 @@
+services:
+  api:
+    image: sawmill/api:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api_config.py:/opt/sawmill/config/api_config.py:ro
+      - ./sawmill_api/:/usr/local/lib/python3.12/site-packages/sawmill_api/
