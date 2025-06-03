@@ -1,7 +1,3 @@
-networks:
-  sawmill:
-    name: sawmill
-
 services:
   api:
     image: sawmill/api:latest
