@@ -3,6 +3,7 @@ Gunicorn WSGI configuation.
 """
 
 import ssl
+import dataclasses
 
 
 keepalive = 30  # seconds
@@ -27,3 +28,13 @@ def ssl_context(address, port):
 # Logging
 errorlog = "-"  # stderr
 accesslog = "/dev/null"
+
+
+@dataclasses.dataclass(frozen=True)
+class OLTPDatabase:
+    host = "oltp"
+    port = 26257
+    user = "sawmill"
+    password = "a"
+    dbname = "sawmill"
+    max_connections = 10

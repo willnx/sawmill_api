@@ -4,5 +4,16 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./api_config.py:/opt/sawmill/config/api_config.py:ro
       - ./sawmill_api/:/usr/local/lib/python3.12/site-packages/sawmill_api/
+  oltp:
+    image: cockroachdb/cockroach:latest-v25.2
+    ports:
+      - "8080:8080"
+      - "26257:26257"
+    environment:
+      - COCKROACH_DATABASE=sawmill
+      - COCKROACH_USER=sawmill
+      - COCKROACH_PASSWORD=a
+    command:
+      - start-single-node
+      - --http-addr=oltp:8080

@@ -3,12 +3,12 @@ RUN mkdir -p /opt/sawmill/config && \
     mkdir -p /opt/sawmill/certs && \
     openssl req -x509 -newkey rsa:2048 -nodes -keyout /opt/sawmill/certs/api.key -out /opt/sawmill/certs/api.cert -days 365 -subj "/CN=localhost" && \
     chown -R nobody:nogroup opt/sawmill
-COPY api_config.py /opt/sawmill/config/
 COPY dist/sawmill_api-*.whl /
 RUN apt update && apt upgrade -y && \
-    apt-get install -y procps && \
+    apt-get install -y procps build-essential libpq-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     pip install -U pip && pip install -U /sawmill_api-*.whl
 USER nobody
+WORKDIR /usr/local/lib/python3.12/site-packages/sawmill_api
 ENTRYPOINT ["/usr/local/bin/gunicorn"]
-CMD ["--config", "/opt/sawmill/config/api_config.py"]
+CMD ["--config", "./wsgi.py"]

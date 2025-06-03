@@ -1,12 +1,24 @@
 from flask import Flask
 
 from sawmill_api.handlers.planks import planks_api
+from sawmill_api import wsgi
+from sawmill_api.lib import oltp
 
 
 def make_app():
     app = Flask(__name__)
     app.url_map.strict_slashes = False
     app.register_blueprint(planks_api)
+    db = oltp.BlockingConnectionPool(
+        host=wsgi.OLTPDatabase.host,
+        port=wsgi.OLTPDatabase.port,
+        user=wsgi.OLTPDatabase.user,
+        password=wsgi.OLTPDatabase.password,
+        dbname=wsgi.OLTPDatabase.dbname,
+        max_connections=wsgi.OLTPDatabase.max_connections,
+    )
+    db.init_app(app)
+
     return app
 
 
