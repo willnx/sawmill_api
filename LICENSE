@@ -1,0 +1,30 @@
+Business Source License 1.1
+
+Licensor: Nicholas Willhite
+Licensed Work: Saw Mill
+Change Date: 2030-06-01
+Change License: Apache License, Version 2.0
+
+Terms
+
+1. Grant of Rights
+Licensor grants you the right to copy, modify, create derivative works, and redistribute the Licensed Work, solely for:
+
+(a) personal use, or
+(b) internal use within your company or organization.
+
+2. Limitations
+The following uses are expressly **prohibited** without the Licensor’s prior written permission:
+
+- Offering the Licensed Work as a hosted service (e.g., SaaS, cloud platform)
+- Selling or including the Licensed Work in a commercial product or service where it is the **primary value or function**
+- Embedding the Licensed Work in a hardware product where it is a **primary feature or selling point**
+- Removing or modifying the Licensor's name, branding, or attribution
+
+Use of the Licensed Work as an **incidental or supporting component** in a hardware product (e.g., internal monitoring, background utilities) is **permitted**, provided it is not the primary function of the device.
+
+3. Change Date
+After the Change Date, the Licensed Work will be made available under the Change License specified above.
+
+4. Additional Terms
+This license is not an open source license as defined by the Open Source Initiative. All rights not explicitly granted are reserved by the Licensor.
