@@ -78,3 +78,7 @@ celerybeat-schedule
 
 # Ruff
 .ruff_cache/
+
+
+# DBMate
+dbmate

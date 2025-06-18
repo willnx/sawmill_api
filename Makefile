@@ -1,4 +1,4 @@
-.PHONY: clean bootstrap smsh build uninstall install images up
+.PHONY: clean bootstrap smsh build uninstall install images migration migrate up
 
 clean:
 	rm -rf build
@@ -10,6 +10,8 @@ clean:
 bootstrap:
 	pip install -U -r requirements-dev.txt
 	pre-commit install
+	curl -fsSL -o dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+	chmod +x ./dbmate
 
 smsh: clean
 	mkdir -p build
@@ -27,6 +29,12 @@ install: uninstall build
 
 images: build
 	docker build --file Dockerfiles/ApiDockerfile --tag sawmill/api .
+
+migration:
+	./dbmate --migrations-dir sawmill_api/migrations new $(filter-out $@,$(MAKECMDGOALS))
+
+migrate:
+	./dbmate --url "postgresql://sawmill:a@localhost:26257/sawmill?sslmode=require" --migrations-dir sawmill_api/migrations up --strict --verbose
 
 up:
 	docker compose up --abort-on-container-failure
