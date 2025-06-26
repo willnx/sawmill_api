@@ -4,16 +4,11 @@ import zlib
 import pydantic
 from flask import Blueprint, request, Response
 
-from sawmill_api import utils
+from sawmill_api import utils, settings
 from sawmill_api.lib.smsh.parser import parse
 
 
 planks_api = Blueprint("planks_api", __name__, url_prefix="/api/1/planks")
-
-# TODO: Make configurable once settings are "a thing"
-CHUNK_READ_SIZE = 8192
-LOG_ROOT = pathlib.Path("/var/log")
-
 log = utils.get_logger(__name__)
 
 
@@ -29,11 +24,18 @@ def get_planks():
     cwd = request.args.get("cwd")
     if not (cwd and command):
         return "Missing required params", 400
-    current_working_directory = utils.resolve_path(pathlib.Path(cwd), LOG_ROOT)
-    if not utils.path_is_valid(current_working_directory, LOG_ROOT):
-        return f"Provided CWD {current_working_directory} is not under {LOG_ROOT}", 400
+    current_working_directory = utils.resolve_path(
+        pathlib.Path(cwd), settings.Planks.log_root
+    )
+    if not utils.path_is_valid(current_working_directory, settings.Planks.log_root):
+        return (
+            f"Provided CWD {current_working_directory} is not under {settings.Planks.log_root}",
+            400,
+        )
 
-    commands, error = parse(command, current_working_directory, LOG_ROOT)
+    commands, error = parse(
+        command, current_working_directory, settings.Planks.log_root
+    )
     if error:
         return error, 400
 
@@ -55,7 +57,7 @@ def get_planks():
 def chunk_transfered_encoding(stream):
     """Stream the data in chunks via plain text."""
     while True:
-        chunk = stream.read(CHUNK_READ_SIZE)
+        chunk = stream.read(settings.Planks.chunk_read_size)
         if chunk:
             yield chunk.decode("utf-8")
         else:
@@ -75,7 +77,7 @@ def compressed_chunk_encoding(stream):
     )
 
     while True:
-        chunk = stream.read(CHUNK_READ_SIZE)
+        chunk = stream.read(settings.Planks.chunk_read_size)
         if not chunk:
             break
 
