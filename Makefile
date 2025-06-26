@@ -10,8 +10,6 @@ clean:
 bootstrap:
 	pip install -U -r requirements-dev.txt
 	pre-commit install
-	curl -fsSL -o dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
-	chmod +x ./dbmate
 
 smsh: clean
 	mkdir -p build
@@ -30,11 +28,28 @@ install: uninstall build
 images: build
 	docker build --file Dockerfiles/ApiDockerfile --tag sawmill/api .
 
+
+# Eat the extra arg for the migration name to avoid having Make treat it as a target.
+ifeq ($(firstword $(MAKECMDGOALS)),migration)
+%:
+	@:
+endif
+
 migration:
-	./dbmate --migrations-dir sawmill_api/migrations new $(filter-out $@,$(MAKECMDGOALS))
+	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
+		echo "Error: Migration name required (e.g. 'make migration add_users_table')"; \
+		exit 1; \
+	fi
+	touch sawmill_api/migrations/V$(shell date +%Y%m%d%H%M%S)__$(filter-out $@,$(MAKECMDGOALS)).sql
 
 migrate:
-	./dbmate --url "postgresql://sawmill:a@localhost:26257/sawmill?sslmode=require" --migrations-dir sawmill_api/migrations up --strict --verbose
+	docker run -it --rm --network sawmill_api_default \
+		-v $(shell pwd)/sawmill_api/migrations:/flyway/sql \
+		flyway/flyway:latest \
+		-url=jdbc:postgresql://oltp:26257/sawmill \
+		-user=sawmill \
+		-password=a \
+		migrate
 
 up:
-	docker compose up --abort-on-container-failure
+	docker compose up

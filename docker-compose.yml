@@ -5,7 +5,11 @@ services:
       - "8000:8000"
     volumes:
       - ./sawmill_api/:/usr/local/lib/python3.12/site-packages/sawmill_api/
+    restart: unless-stopped
+    depends_on:
+      - oltp
   oltp:
+    init: true
     image: cockroachdb/cockroach:latest-v25.2
     ports:
       - "8080:8080"

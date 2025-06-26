@@ -2,17 +2,23 @@
 Interact with an Online Transaction Processing (OLTP) database.
 """
 
+import time
 from collections import deque
 from contextlib import contextmanager
 from threading import Semaphore
 from functools import wraps
 from textwrap import dedent
+import pathlib
+
+from sawmill_api import settings
 
 import psycopg2
-import psycopg2.extras
-
+from psycopg2.extensions import register_adapter, QuotedString
 
 ENGINE = None
+
+
+register_adapter(pathlib.Path, lambda p: QuotedString(str(p)))
 
 
 class BlockingConnectionPool:
@@ -38,17 +44,31 @@ class BlockingConnectionPool:
             ENGINE = self
 
     @contextmanager
-    def get_conn(self, timeout=None):
+    def get_conn(self, timeout=None, retries=5):
         self.semaphore.acquire(timeout=timeout)
         conn = self._pool.pop()
         if conn is None:
-            conn = psycopg2.connect(
-                host=self._host,
-                port=self._port,
-                dbname=self._dbname,
-                user=self._user,
-                password=self._password,
-            )
+            for attempt in range(1, retries):
+                try:
+                    conn = psycopg2.connect(
+                        host=self._host,
+                        port=self._port,
+                        dbname=self._dbname,
+                        user=self._user,
+                        password=self._password,
+                    )
+                except Exception:
+                    time.sleep(attempt)
+                else:
+                    break
+            if attempt == retries - 1:
+                conn = psycopg2.connect(
+                    host=self._host,
+                    port=self._port,
+                    dbname=self._dbname,
+                    user=self._user,
+                    password=self._password,
+                )
         yield conn
         self._pool.append(conn)
         self.semaphore.release()
@@ -116,3 +136,55 @@ def example(cursor):
     )
     cursor.execute(sql)
     return rows_to_dicts(cursor)
+
+
+@with_cursor()
+def get_api_settings(cursor) -> dict[str, list]:
+    """
+    Obtain the settings used by the API.
+    """
+    sql = dedent(
+        """\
+        SELECT
+            section,
+            name,
+            value
+        FROM api.settings
+        """
+    )
+    cursor.execute(sql)
+    grouped_by_section = {}
+    for row in cursor.fetchall():
+        section, name, value = row
+        section_group = grouped_by_section.setdefault(section, {})
+        section_group[name] = value
+    return grouped_by_section
+
+
+@with_cursor()
+def set_api_setting(cursor, setting: settings.Section):
+    """
+    Save the current section settings ot the database.
+    """
+    sql = dedent(
+        """\
+        INSERT INTO api.settings (section, name, value)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (section, name)
+        DO UPDATE
+        SET
+            value = excluded.value
+        WHERE
+            api.settings.value IS DISTINCT FROM excluded.value
+        ;
+        """
+    )
+    params = [
+        (
+            settings.title_to_dash(setting.__class__.__name__),
+            name,
+            value,
+        )
+        for name, value in iter(setting)
+    ]
+    cursor.executemany(sql, params)

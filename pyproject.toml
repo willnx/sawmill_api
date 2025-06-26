@@ -26,3 +26,6 @@ exclude = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sawmill_api*"]
+
+[tool.setuptools.package-data]
+"sawmill_api" = ["migrations/*.sql"]
