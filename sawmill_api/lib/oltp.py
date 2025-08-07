@@ -9,6 +9,7 @@ from threading import Semaphore
 from functools import wraps
 from textwrap import dedent
 import pathlib
+import socket
 
 from sawmill_api import settings
 
@@ -45,7 +46,10 @@ class BlockingConnectionPool:
 
     @contextmanager
     def get_conn(self, timeout=None, retries=5):
-        self.semaphore.acquire(timeout=timeout)
+        if not self.semaphore.acquire(timeout=timeout):
+            raise TimeoutError(
+                f"Unable to obtain a database connection after {timeout} seconds."
+            )
         conn = self._pool.pop()
         if conn is None:
             for attempt in range(1, retries):
@@ -69,9 +73,27 @@ class BlockingConnectionPool:
                     user=self._user,
                     password=self._password,
                 )
-        yield conn
-        self._pool.append(conn)
-        self.semaphore.release()
+        try:
+            yield conn
+        except psycopg2.OperationalError as doh:
+            cause = doh.__cause__ or doh.__context__
+            if isinstance(
+                cause,
+                (
+                    socket.timeout,
+                    socket.gaierror,
+                    ConnectionResetError,
+                    ConnectionAbortedError,
+                ),
+            ):
+                # Toss out the connection in hopes the network
+                # partition is a transient failure.
+                conn = None
+            else:
+                raise
+        finally:
+            self._pool.append(conn)
+            self.semaphore.release()
 
     def close(self):
         for conn in self._pool:
