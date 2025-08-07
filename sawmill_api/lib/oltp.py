@@ -46,7 +46,7 @@ class BlockingConnectionPool:
 
     @contextmanager
     def get_conn(self, timeout=None, retries=5):
-        if self.semaphore.acquire(timeout=timeout):
+        if not self.semaphore.acquire(timeout=timeout):
             raise TimeoutError(
                 f"Unable to obtain a database connection after {timeout} seconds."
             )
@@ -86,6 +86,8 @@ class BlockingConnectionPool:
                     ConnectionAbortedError,
                 ),
             ):
+                # Toss out the connection in hopes the network
+                # partition is a transient failure.
                 conn = None
             else:
                 raise
